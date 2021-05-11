@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="common.js"></script>
+  <title>System information</title>
+  <script type="text/javascript">
+    var
+      H = "innerHTML";
+      function g(i) {
+        return document.getElementById(i);
+      };
+
+    window.onload = function() {
+      var panel = g('info');
+      panel[H] = 'Gettting info...';
+      var s = '';
+      fetch('info.json').then(r => r.json())
+      .then(json => {
+        for (var prop in json) {
+          s+= "<span class='left'>" + prop + 
+            "&nbsp;:</span><span class='right'>" + json[prop] + "</span><br>";
+        }        
+        panel[H] = s;
+      })
+      .catch(e => console.log(e.message))        
+    }
+  </script>
+</head>
+<body>
+  <a href="admin.html" class="btn btn--home txt--l">&#11013;</a>
+  <strong>&nbsp;&nbsp;System info</strong>
+  <hr>
+  <div class="page box">
+    <div id="info"></div>
+  </div>
+</body>
+</html>

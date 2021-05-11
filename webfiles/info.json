@@ -1,0 +1,21 @@
+{
+  "CPU chip id": "14729257",
+  "CPU freq": 80,
+  "SDK version": "2.2.2-dev(38a443e)",
+  "Core version": "2_6_3",
+  "Flash chip id": 1458400,
+  "Flash chip speed": 40000000,
+  "Flash size": 4194304,
+  "Firmware size": 442464,
+  "OTA size": 2699264,
+  "Free heap": 34680,
+  "SPIFFS size": 957314,
+  "SPIFS used size": 51957,
+  "SSID": "Studio 19",
+  "BSSID": "F8:D1:11:AF:98:44",
+  "RSSI": -73,
+  "IP": "192.168.19.176",
+  "UpTime": "0T00:00:04",
+  "Reset Reason": "External System",
+  "Last Error": ""
+}

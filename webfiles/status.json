@@ -1,0 +1,13 @@
+{
+  "Time": "1970-01-01T08:00:03",
+  "UpTime": "0T00:00:04",
+  "Free heap": 36440,
+  "SSID": "Studio 19",
+  "BSSID": "F8:D1:11:AF:98:44",
+  "RSSI": -73,
+  "IP": "192.168.19.176",
+  "Disconnections": {
+    "WiFi": 0,
+    "MQTT": 0
+  }
+}

@@ -1,0 +1,35 @@
+const char admin_html[] PROGMEM = R"=====(<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<meta name=viewport content="width=device-width, initial-scale=1" />
+<link href=style.css rel=stylesheet type=text/css>
+<title>Administration</title>
+<script>function p(b,a){if(confirm(b)){fetch(a);window.setTimeout(function(){window.location.replace("admin.html")},1000);return false}};</script>
+</head>
+<body>
+<a href=index.html class="btn btn--home txt--l">&#127968;</a>
+<strong>&nbsp;&nbsp;Administration</strong>
+<hr>
+<a href=info.html class=btn>System information</a>
+<br>
+<a href=settings.html class=btn>Settings information</a>
+<br>
+<a href=general.html class=btn>General Configuration</a>
+<br>
+<a href=wifi.html class=btn>WiFi Configuration</a>
+<br>
+<a href=mqtt.html class=btn>MQTT broker Configuration</a>
+<br>
+<a href=ntp.html class=btn>NTP Settings</a>
+<br>
+<a href=update.html class=btn>Update System</a>
+<br>
+<p onclick="p('Reset to factory defaults?','/reset')" class="btn btn--red m">Reset to factory defaults</p>
+<br>
+<p onclick="p('Save and Reboot device?','/save')" class="btn btn--green m">Save and reboot</p>
+<br>
+<p onclick="p('Reboot device?','/reboot')" class="btn btn--viol m">Reboot without saving</p>
+<br>
+</body>
+</html>)=====";

@@ -1,0 +1,44 @@
+[
+  {
+    "ssid": "Studio 19",
+    "rssi": -71,
+    "bssid": "F8:D1:11:AF:98:44",
+    "secure": 4
+  },
+  {
+    "ssid": "COSMOTE WiFi Fon test123",
+    "rssi": -73,
+    "bssid": "52:A3:66:4B:E7:F9",
+    "secure": 7
+  },
+  {
+    "ssid": "COSMOTE-4BE7F8",
+    "rssi": -74,
+    "bssid": "C4:A3:66:4B:E7:F8",
+    "secure": 8
+  },
+  {
+    "ssid": "COSMOTE-2F66C0",
+    "rssi": -83,
+    "bssid": "28:FF:3E:2F:66:C0",
+    "secure": 8
+  },
+  {
+    "ssid": "LITSA",
+    "rssi": -85,
+    "bssid": "A4:B1:E9:9C:A9:82",
+    "secure": 8
+  },
+  {
+    "ssid": "WIND_BFE524",
+    "rssi": -90,
+    "bssid": "8C:59:73:BF:E5:24",
+    "secure": 8
+  },
+  {
+    "ssid": "Wind WiFi 29BCD4",
+    "rssi": -94,
+    "bssid": "2C:26:C5:29:BC:D4",
+    "secure": 2
+  }
+]

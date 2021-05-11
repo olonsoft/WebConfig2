@@ -1,0 +1,43 @@
+﻿const char ntp_html[] PROGMEM = R"=====(<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width" />
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="common.js"></script>
+  <title>NTP settings</title>
+  <script>
+    window.onload = function() {
+      loadSettings().then(json => {
+        _set("n", json.ntpserver);
+        _set("z", json.timezone);                    
+      })
+      .catch(e => console.log(e.message));
+    }
+
+    function saveVars() {
+      var obj = { ntpserver: _getS("n"), timezone: _getS("z")};
+      saveSettings(obj);
+      home();
+    }
+  </script>
+</head>
+<body>
+  <a href="admin.html" class="btn btn--home txt--l">&#11013;</a>
+  <strong>&nbsp;&nbsp;NTP Settings</strong>
+  <hr>
+  <div class="page box">
+    <form action="/ntp" method="get">
+      &nbsp;NTP Server:
+      <br>
+      <input type="text" id="n" name="ntpserver" size="20" maxlength="172" value="">
+      <br><br>
+      &nbsp;Timezone String:<br>
+      <small><a href="https://remotemonitoringsystems.ca/time-zone-abbreviations.php">https://remotemonitoringsystems.ca/time-zone-abbreviations.php</a></small>		
+      <input type="text" id="z" name="ntpserver" size="20" maxlength="172" value=""><br><br>      
+    </form>
+  </div>
+  <br>
+  <p onclick="saveVars()" class="btn btn--green m">Save</p>
+</body>
+</html>)=====";
