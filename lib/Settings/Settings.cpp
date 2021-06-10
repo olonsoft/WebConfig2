@@ -1,6 +1,6 @@
 #include "../../src/defaults.h"
 #include <ArduinoJson.h>
-#include <helper.h>
+#include <helper_general.h>
 #include <helper_debug.h>
 #include <Settings.h>
 
@@ -68,8 +68,7 @@ app_settings_t new_settings;
 bool formatFS() {
   ESP_FS.end();
   ESP_FS.format();
-  fileSystemBegun = false;
-  return beginFS();
+  return helper_general::beginFileSystem();
 }
 
 void copySettings(app_settings_t settingsFrom, app_settings_t &settingsTo) {
@@ -78,7 +77,7 @@ void copySettings(app_settings_t settingsFrom, app_settings_t &settingsTo) {
 }
 
 bool loadSettings(app_settings_t &settings){
-  if (!beginFS()) return false;
+  if (!helper_general::beginFileSystem()) return false;
   
   if (!ESP_FS.exists(SETTINGS_FILE)) {
     LOGWARNF_P(PSTR("%sConfig file does not exist. Creating default. [%s]\n"),
@@ -111,7 +110,7 @@ bool loadSettings(app_settings_t &settings){
 }
 
 bool saveSettings(app_settings_t settings) {
-  if (!beginFS()) return false;
+  if (!helper_general::beginFileSystem()) return false;
   
   File f = ESP_FS.open(SETTINGS_FILE, "w");
   if (!f) {
@@ -220,7 +219,7 @@ String settings2Json(app_settings_t settings) {
 
 
 bool deleteSettingsFile() {
-  if (!beginFS()) return false;
+  if (!helper_general::beginFileSystem()) return false;
   if (ESP_FS.exists(SETTINGS_FILE)) {
     LOGINFOF_P(PSTR("%sDeleting config file [%s]...."),
                   SETTINGS_STR, SETTINGS_FILE);        
@@ -236,20 +235,20 @@ bool deleteSettingsFile() {
 }
 
 String loadNetworksConfigJson(app_settings_t settings) {
-  if (!beginFS()) return "[]";
+  if (!helper_general::beginFileSystem()) return "[]";
   
   if (!ESP_FS.exists(NETWORKS_FILE)) {
     LOGWARNF_P(PSTR("%sNetworks file does not exist. Creating default. [%s]\n"),
                   SETTINGS_STR, NETWORKS_FILE);
     // write default wifi settings to file
     String s = "[{" + 
-               jsonPair(C_SSID,     String(settings.ssid)) + "," +               
-               jsonPair(C_PASSWORD, String(settings.pass)) + "," +
-               quotedText(C_DHCP) + ":" + boolToString(settings.dhcp) + "," +               
-               jsonPair(C_IP,       String(settings.ip)) + "," +
-               jsonPair(C_NETMASK,  String(settings.netmask)) + "," +
-               jsonPair(C_GATEWAY,  String(settings.gateway)) + "," +
-               jsonPair(C_DNS,      String(settings.dns)) +
+               helper_general::jsonPair(C_SSID,     String(settings.ssid)) + "," +               
+               helper_general::jsonPair(C_PASSWORD, String(settings.pass)) + "," +
+               helper_general::quotedText(C_DHCP) + ":" + helper_general::boolToString(settings.dhcp) + "," +               
+               helper_general::jsonPair(C_IP,       String(settings.ip)) + "," +
+               helper_general::jsonPair(C_NETMASK,  String(settings.netmask)) + "," +
+               helper_general::jsonPair(C_GATEWAY,  String(settings.gateway)) + "," +
+               helper_general::jsonPair(C_DNS,      String(settings.dns)) +
                "}]";
     TLOGDEBUG("CREATE new json -->"); LOGDEBUGLN(s);               
     saveNetworksConfigJson(s);
@@ -274,7 +273,7 @@ String loadNetworksConfigJson(app_settings_t settings) {
 }
 
 bool saveNetworksConfigJson(String json) {
-  if (!beginFS()) return false;
+  if (!helper_general::beginFileSystem()) return false;
   
   File f = ESP_FS.open(NETWORKS_FILE, "w");
   if (!f) {
@@ -318,7 +317,7 @@ bool loadNetworks(TAddNetworkCallback cb) {
 }
 
 bool deleteNetworksConfigJson() {
-  if (!beginFS()) return false;
+  if (!helper_general::beginFileSystem()) return false;
   if (ESP_FS.exists(NETWORKS_FILE)) {
     LOGINFOF_P(PSTR("%sDeleting networks file [%s]...."),
                   SETTINGS_STR, NETWORKS_FILE);        

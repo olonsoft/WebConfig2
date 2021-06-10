@@ -2,7 +2,7 @@
 #include <AsyncJson.h>
 #include <Ticker.h>
 #include <WebConfig2.h>
-#include <helper.h>
+#include <helper_general.h>
 #include <helper_wifi.h>
 
 // include html and css pages
@@ -50,7 +50,7 @@ void WebConfig2::onTimeoutEvent() {
 
 void WebConfig2::renewTimeout() {
   timeoutTicker.detach();
-  if (wifiIsAP(WiFi.getMode())) {
+  if (helper_wifi::wifiIsAP(WiFi.getMode())) {
     TLOGDEBUGF_P(PSTR("%sRenew Timeout on AP.\n"), WEBCONFIG_STR);
 
 #ifdef ESP8266
@@ -307,7 +307,7 @@ void WebConfig2::setupWebServerHandlers() {
   _server->on("/info.json", HTTP_GET, [this](AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return request->requestAuthentication();
     TLOGDEBUGF_P(PSTR("%sOn info.json\n"), WEBCONFIG_STR);
-    request->send(200, "text/json", getSystemInfoJson());
+    request->send(200, "text/json", helper_general::getSystemInfoJson());
   });
 
 //===========================================================================
@@ -421,12 +421,12 @@ void WebConfig2::begin() {
   char buffer[80];
   snprintf_P(buffer, sizeof(buffer),
              PSTR("%sCaptive portal started. Mode: %s\n"), WEBCONFIG_STR,
-             getWifiModeString(WiFi.getMode()).c_str());
+             helper_wifi::getWifiModeString(WiFi.getMode()).c_str());
   sendStatusCallback(WEB_CONFIG_STARTED, buffer);
 }
 
 String WebConfig2::getApSsid() {
-  return _apSsid.length() ? _apSsid : getDefaultDeviceName();
+  return _apSsid.length() ? _apSsid : helper_general::getDefaultDeviceName();
 
 }  // getApSsid
 

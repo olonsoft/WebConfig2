@@ -1,6 +1,6 @@
 #include "../../src/defaults.h"
 #include <MQTT2.h>
-#include <helper.h>
+#include <helper_general.h>
 
 AsyncMqttClient mqttClient;
 
@@ -32,12 +32,12 @@ TMqttMessage _onMQTTMessage;
 
 void mqttSubscribe() { 
   // subscribe to global topic (for all devices)
-  String topic = addTrailingSlash(mqttGlobalTopic) + 
+  String topic = helper_general::addTrailingSlash(mqttGlobalTopic) + 
                         String(MQTT_TOPIC_COMMAND);
   mqttClient.subscribe(CSTR(topic), MQTT_QOS);
   
   // subscribe to this device's topic
-  topic = addTrailingSlash(mqttDeviceTopic) + 
+  topic = helper_general::addTrailingSlash(mqttDeviceTopic) + 
                  String(MQTT_TOPIC_COMMAND);
   mqttClient.subscribe(CSTR(topic), MQTT_QOS);
 
@@ -135,11 +135,11 @@ void mqttServerSetup(String broker, uint16_t port, String user, String password,
   mqttUser          = user;
   mqttPassword      = password;
 
-  mqttDeviceName    = getDeviceName(deviceName);
-  mqttGlobalTopic   = addTrailingSlash(globalTopic);
-  mqttDeviceTopic   = addTrailingSlash(mqttGlobalTopic) +
-                      addTrailingSlash(mqttDeviceName);
-  mqttLastWillTopic = addTrailingSlash(mqttDeviceTopic) +
+  mqttDeviceName    = helper_general::addMacAddress(deviceName);
+  mqttGlobalTopic   = helper_general::addTrailingSlash(globalTopic);
+  mqttDeviceTopic   = helper_general::addTrailingSlash(mqttGlobalTopic) +
+                      helper_general::addTrailingSlash(mqttDeviceName);
+  mqttLastWillTopic = helper_general::addTrailingSlash(mqttDeviceTopic) +
                       String(MQTT_TOPIC_SYSTEM);
 
   mqttClient.onConnect(onMqttConnect);
@@ -201,19 +201,19 @@ void MQTTSend(String topic, String message, bool retain) {
 }
 
 void MQTTSendStatus(String message) {
-  String _topic =  addTrailingSlash(mqttDeviceTopic) +
+  String _topic =  helper_general::addTrailingSlash(mqttDeviceTopic) +
       String(MQTT_TOPIC_STATUS);
   MQTTSend(_topic, message, true);
 }
 
 void MQTTSendSystem(String message) {
-  String _topic = addTrailingSlash(mqttDeviceTopic) + 
+  String _topic = helper_general::addTrailingSlash(mqttDeviceTopic) + 
       String(MQTT_TOPIC_SYSTEM);
   MQTTSend(_topic, message, true);
 }
 
 void MQTTSendData(String message) {
-  String _topic = addTrailingSlash(mqttDeviceTopic) +  
+  String _topic = helper_general::addTrailingSlash(mqttDeviceTopic) +  
       String(MQTT_TOPIC_DATA);
   MQTTSend(_topic, message, false);
 }

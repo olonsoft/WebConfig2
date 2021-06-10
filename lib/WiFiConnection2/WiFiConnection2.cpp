@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "../../src/defaults.h"
-#include <helper.h>
+#include <helper_general.h>
 #include <helper_wifi.h>
 
 #include <WiFiConnection2.h>
@@ -138,7 +138,7 @@ String getLastDisconnectReason(WiFiDisconnectReason lastDisconnectReason) {
 WiFiDisconnectReason _lastDisconnectReason;
 
 String WiFiGetAPssid() {
-  return getDeviceName(String(current_settings.deviceName));
+  return helper_general::addMacAddress(String(current_settings.deviceName));
 }
 
 String WiFiGetHostname() {
@@ -212,7 +212,7 @@ void setWiFiMode(WiFiMode_t wifimode) {
     delay(100);
   }
 
-  TLOGDEBUGF_P(PSTR("%sSet WiFi to %s\n"), WIFI_STR, getWifiModeString(wifimode).c_str());
+  TLOGDEBUGF_P(PSTR("%sSet WiFi to %s\n"), WIFI_STR, helper_wifi::getWifiModeString(wifimode).c_str());
 
   int retry = 2;
   while (!WiFi.mode(wifimode) && retry--) {
@@ -230,13 +230,13 @@ void setWiFiMode(WiFiMode_t wifimode) {
     delay(100); // Must allow for some time to init.
   }
 
-  bool new_mode_AP_enabled = wifiIsAP(wifimode);
+  bool new_mode_AP_enabled = helper_wifi::wifiIsAP(wifimode);
 
-  if (wifiIsAP(cur_mode) && !new_mode_AP_enabled) {
+  if (helper_wifi::wifiIsAP(cur_mode) && !new_mode_AP_enabled) {
     TLOGDEBUGF_P(PSTR("%sAP mode Disabled.\n"), WIFI_STR);    
   }
 
-  if (wifiIsAP(cur_mode) != new_mode_AP_enabled) {
+  if (helper_wifi::wifiIsAP(cur_mode) != new_mode_AP_enabled) {
     // Mode has changed
     setAPinternal(new_mode_AP_enabled);
   }
@@ -389,7 +389,7 @@ void doWiFiConnect() {
     bool ret = WiFi.setHostname(WiFiGetHostname().c_str());
 #endif    
     TLOGDEBUGF_P(PSTR("%sSetting hostname: %s %s\n"),
-          WIFI_STR, WiFiGetHostname().c_str(), boolSuccess(ret).c_str());
+          WIFI_STR, WiFiGetHostname().c_str(), helper_general::boolSuccess(ret).c_str());
           
     TLOGDEBUGF_P(PSTR("%sTrying wifi connection #%d (%d) to \"%s\"\n"),
         WIFI_STR, _idToConnect, idx, entry.ssid);
@@ -404,7 +404,7 @@ void doWiFiConnect() {
         WIFI_STR, _wifiRetryConnectionCount, entry.priority, entry.bssid[0],
         entry.bssid[1], entry.bssid[2], entry.bssid[3], entry.bssid[4],
         entry.bssid[5], entry.channel, entry.rssi,
-        getEncryptionTypeStr(entry.security).c_str(), entry.ssid, pass.c_str());
+        helper_wifi::getEncryptionTypeStr(entry.security).c_str(), entry.ssid, pass.c_str());
     
     doStatusCallbacks(STATUS_CONNECTING, buffer);
 #ifdef CONN2_WIFI_ENABLE_ENTERPRISE
@@ -530,7 +530,7 @@ void processWiFiScan() {
                PSTR("%s[%s] Ch: %02d RSSI: %3d Sec: %15s %s SSID: %s"),
                WIFI_STR, WiFi.BSSIDstr(ix[i]).c_str(), 
                WiFi.channel(ix[i]), WiFi.RSSI(ix[i]),
-               getEncryptionTypeStr( WiFi.encryptionType(ix[i]) ).c_str(),
+               helper_wifi::getEncryptionTypeStr( WiFi.encryptionType(ix[i]) ).c_str(),
 #ifdef ESP8266
                _isHiddenStr(WiFi.isHidden(ix[i])).c_str(),
 #else

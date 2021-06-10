@@ -1,7 +1,7 @@
 #include <Wrapper.h>
 #include "../../src/defaults.h"
 #include <CmdParser.h>
-#include <helper.h>
+#include <helper_general.h>
 #include <helper_wifi.h>
 #include <MQTT2.h>
 #include <Settings.h>
@@ -27,7 +27,7 @@ uint16_t wifiDisconnections = 0;
 
 
 void startWeb(){
-  if (wifiConnected()) {
+  if (helper_wifi::wifiConnected()) {
     Serial.println("SetSTA.");
     setSTA(true);
   } else {
@@ -43,12 +43,12 @@ void startWeb(){
 bool MQTTConnected = false;
 
 void sendMQTTSystemInfo() {
-  MQTTSendSystem(CSTR(getSystemInfoJson()));
+  MQTTSendSystem(CSTR(helper_general::getSystemInfoJson()));
 }
 
 void sendMQTTStatusInfo() {
   MQTTSendStatus(
-      CSTR(getSystemStatusJson(wifiDisconnections, mqttDisconnections)));
+      CSTR(helper_general::getSystemStatusJson(wifiDisconnections, mqttDisconnections)));
 }
 
 void sendMQTTData(){
@@ -184,7 +184,7 @@ void mqttConnectionChanged(mqttConnectionStatus_t status, char *message) {
       TLOGDEBUG(message);
       MQTTConnected = false;
       tMqttSendStatusInfo.disable();
-      if (wifiConnected()) {
+      if (helper_wifi::wifiConnected()) {
         addToTaskQueue(mqttConnect);
       }
       break;
@@ -205,11 +205,11 @@ void mqttConnectionChanged(mqttConnectionStatus_t status, char *message) {
 
 void commandGetSystemStatus() {
   MQTTSendStatus(
-      CSTR(getSystemStatusJson(wifiDisconnections, mqttDisconnections)));
+      CSTR(helper_general::getSystemStatusJson(wifiDisconnections, mqttDisconnections)));
 }
 
 void commandGetSystemInfo() {
-  MQTTSendSystem(getSystemInfoJson());
+  MQTTSendSystem(helper_general::getSystemInfoJson());
 }
 
 void commandGetSettings1(){
@@ -227,63 +227,63 @@ void commandGetSavedNetworks() {
 void commandDeleteNetworks() {
   bool result = deleteNetworksConfigJson();
   MQTTSendStatus("Delete networks file " +
-                  boolToString(result, SUCCESS_STR, FAIL_STR));
+                  helper_general::boolToString(result, SUCCESS_STR, FAIL_STR));
 }
 
 void commandDeleteSettings() {
   MQTTSendStatus(
-      "{" + jsonPair(PARSER_RESPONSE, "Deleting settings file...") + "}");
+      "{" + helper_general::jsonPair(PARSER_RESPONSE, "Deleting settings file...") + "}");
   bool result = deleteSettingsFile();
   MQTTSendStatus(
       "{" +
-      jsonPair(PARSER_RESPONSE,
-                "Delete settings: " + boolSuccess(result)) +
+      helper_general::jsonPair(PARSER_RESPONSE,
+                "Delete settings: " + helper_general::boolSuccess(result)) +
       "}");
 }
 
 void commandFormatFS() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Formatting...") + "}");
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Formatting...") + "}");
   bool result = formatFS();
   MQTTSendStatus(
       "{" +
-      jsonPair(PARSER_RESPONSE,
-                "Format: " + boolSuccess(result)) +
+      helper_general::jsonPair(PARSER_RESPONSE,
+                "Format: " + helper_general::boolSuccess(result)) +
       "}");
 }
 
 void commandSettingsModified() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Settings modified.") +
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Settings modified.") +
                   "}");
 }
 
 void commandLoggedIn() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Admin logged in.") + "}");
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Admin logged in.") + "}");
 }
 
 void commandLoggedOut() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Admin logged out.") +
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Admin logged out.") +
                   "}");
 }
 
 void commandSaveSettings() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Saving new settings...") +
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Saving new settings...") +
                   "}");
   bool result = saveSettings(new_settings);
   MQTTSendStatus(
       "{" +
-      jsonPair(PARSER_RESPONSE,
-                "Format: " + boolSuccess(result)) +
+      helper_general::jsonPair(PARSER_RESPONSE,
+                "Format: " + helper_general::boolSuccess(result)) +
       "}");
 }
 
 void commandNoAdminRights() {
   MQTTSendStatus(
-      "{" + jsonPair(PARSER_RESPONSE, "No Admin rights to this command.") +
+      "{" + helper_general::jsonPair(PARSER_RESPONSE, "No Admin rights to this command.") +
       "}");
 }
 
 void commandError() {
-  MQTTSendStatus("{" + jsonPair(PARSER_RESPONSE, "Command error!") + "}");
+  MQTTSendStatus("{" + helper_general::jsonPair(PARSER_RESPONSE, "Command error!") + "}");
 }
 
 void commandReboot() {
@@ -406,7 +406,7 @@ void webConfigStatusChange(webconfig_status_t wcStatus, char *message) {
   TLOGDEBUG(message);
   switch (wcStatus) {
     case WEB_CONFIG_TIMEOUT:
-      if (!wifiConnected()) {
+      if (!helper_wifi::wifiConnected()) {
         // clear all (marked to connect) networks and force rescan on next connect
         resetSavedNetworks();        
         addToTaskQueue(wifiConnect); // reconnect wifi
@@ -436,7 +436,7 @@ void initialize() {
   loadNetworks(addNetworksCallback);
   
   // setup Firmware Over the Air
-  FOTAClient.setFOTAParameters(addTrailingSlash(String(current_settings.firmwareConfURL)), getDeviceName(String(current_settings.deviceName)), APP_VERSION, FS_VERSION); // todo: add defined
+  FOTAClient.setFOTAParameters(helper_general::addTrailingSlash(String(current_settings.firmwareConfURL)), helper_general::addMacAddress(String(current_settings.deviceName)), APP_VERSION, FS_VERSION); // todo: add defined
   FOTAClient.onMessage(onFOTAMessage);
 
   TLOGINFOLN("Setup MQTT");

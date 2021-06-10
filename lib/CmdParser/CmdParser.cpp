@@ -1,7 +1,7 @@
 #include <ArduinoJson.h>
 #include <CmdParser.h>
 #include <Settings.h>
-#include <helper.h>
+#include <helper_general.h>
 
 #define PARSER_STR "[CMD] "
 #define PARSER_RESPONSE "Response"
