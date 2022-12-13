@@ -230,7 +230,7 @@ void WebConfig2::setupWebServerHandlers() {
     if (!checkAuth(request)) return request->requestAuthentication();
     TLOGDEBUGF_P(PSTR("%sOn json.json\n"), WEBCONFIG_STR);
     String s = settings2Json(new_settings);
-    request->send(200, "text/json", s);
+    request->send(200, "application/json", s);
   });
 
   //================================================================================
@@ -270,7 +270,7 @@ void WebConfig2::setupWebServerHandlers() {
                 if (!checkAuth(request))
                   return request->requestAuthentication();
                   TLOGDEBUGF_P(PSTR("%sOn scanwifi.json\n"), WEBCONFIG_STR);
-                request->send(200, "text/json", scanWiFiJson(true));
+                request->send(200, "application/json", scanWiFiJson(true));
               });  //_server->on /wifi/list
 
 //===========================================================================
@@ -281,7 +281,7 @@ void WebConfig2::setupWebServerHandlers() {
                 if (!checkAuth(request))
                   return request->requestAuthentication();  
                   TLOGDEBUGF_P(PSTR("%sOn network.json Send: %s\n"), WEBCONFIG_STR, networkConfigJson.c_str());              
-                request->send(200, "text/json", networkConfigJson);
+                request->send(200, "application/json", networkConfigJson);
               });
 
 //===========================================================================
@@ -307,7 +307,7 @@ void WebConfig2::setupWebServerHandlers() {
   _server->on("/info.json", HTTP_GET, [this](AsyncWebServerRequest *request) {
     if (!checkAuth(request)) return request->requestAuthentication();
     TLOGDEBUGF_P(PSTR("%sOn info.json\n"), WEBCONFIG_STR);
-    request->send(200, "text/json", helper_general::getSystemInfoJson());
+    request->send(200, "application/json", helper_general::getSystemInfoJson());
   });
 
 //===========================================================================

@@ -27,8 +27,8 @@ bool      _forcedDisconnect           = false;
 conn2_wifi_status_t _status;
 
 #ifdef ESP8266
-WiFiEventHandler onStationModeConnectedHandler, 
-                 onStationModeDisconnectedHandler, 
+WiFiEventHandler onStationModeConnectedHandler,
+                 onStationModeDisconnectedHandler,
                  onStationModeGotIPHandler;
 #endif
 
@@ -162,7 +162,7 @@ void setAPinternal(bool enable) {
     String softAPSSID = WiFiGetAPssid();
     String pwd        = String(current_settings.adminPass);
     IPAddress apIP(192, 168, 4, 1);
-    IPAddress subnet(255, 255, 255, 0);    
+    IPAddress subnet(255, 255, 255, 0);
     if (!WiFi.softAPConfig(apIP, apIP, subnet)) {
       TLOGDEBUGF_P(PSTR("%s[AP] softAPConfig failed!\n"), WIFI_STR);
     }
@@ -170,10 +170,10 @@ void setAPinternal(bool enable) {
     TLOGDEBUGF_P(PSTR("%s[AP] ssid: %s pass: %s\n"), WIFI_STR, softAPSSID.c_str(), pwd.c_str());
 
     if (WiFi.softAP(softAPSSID.c_str(), pwd.c_str())) {
-      TLOGDEBUGF_P(PSTR("%sAP Mode enabled: ssid: %s\n"), 
+      TLOGDEBUGF_P(PSTR("%sAP Mode enabled: ssid: %s\n"),
           WIFI_STR, softAPSSID.c_str());
     } else {
-      TLOGDEBUGF_P(PSTR("%sError starting AP Mode. ssid: %s ip: %s\n"), 
+      TLOGDEBUGF_P(PSTR("%sError starting AP Mode. ssid: %s ip: %s\n"),
           WIFI_STR, softAPSSID.c_str(), apIP.toString().c_str());
     }
     #ifdef ESP32
@@ -183,10 +183,10 @@ void setAPinternal(bool enable) {
     if (wifi_softap_dhcps_status() != DHCP_STARTED) {
       if (!wifi_softap_dhcps_start()) {
         TLOGDEBUGF_P(PSTR("%sAP Start DHCP failed.\n"), WIFI_STR);
-        
+
       }
     }
-    #endif // ifdef ESP8266    
+    #endif // ifdef ESP8266
   } else {
     //if (dnsServerActive) {
     //  dnsServerActive = false;
@@ -204,8 +204,13 @@ void setWiFiMode(WiFiMode_t wifimode) {
   }
 
   if (wifimode != WIFI_OFF) {
-    #ifdef ESP8266
+    #ifdef ESP32 // In ESP32 setHostName must be just before WiFi.mode()
+      bool ret = WiFi.setHostname(WiFiGetHostname().c_str());
+      TLOGDEBUGF_P(PSTR("%sSetting hostname: %s %s\n"),
+            WIFI_STR, WiFiGetHostname().c_str(), helper_general::boolSuccess(ret).c_str());
+    #endif
 
+    #ifdef ESP8266
     // See: https://github.com/esp8266/Arduino/issues/6172#issuecomment-500457407
     WiFi.forceSleepWake(); // Make sure WiFi is really active.
     #endif // ifdef ESP8266
@@ -216,24 +221,29 @@ void setWiFiMode(WiFiMode_t wifimode) {
 
   int retry = 2;
   while (!WiFi.mode(wifimode) && retry--) {
-    TLOGDEBUGF_P(PSTR("%sRetry set mode...\n"), WIFI_STR);    
+    TLOGDEBUGF_P(PSTR("%sRetry set mode...\n"), WIFI_STR);
     delay(100);
   }
 
   if (wifimode == WIFI_OFF) {
     delay(1000);
     #ifdef ESP8266
-    WiFi.forceSleepBegin();
+      WiFi.forceSleepBegin();
+      delay(1);
     #endif // ifdef ESP8266
-    delay(1);
   } else {
+    #ifdef ESP8266 // In ESP8266 setHostName must be just after WiFi.mode()
+      bool ret = WiFi.setHostname(WiFiGetHostname().c_str());
+      TLOGDEBUGF_P(PSTR("%sSetting hostname: %s %s\n"),
+            WIFI_STR, WiFiGetHostname().c_str(), helper_general::boolSuccess(ret).c_str());
+    #endif
     delay(100); // Must allow for some time to init.
   }
 
   bool new_mode_AP_enabled = helper_wifi::wifiIsAP(wifimode);
 
   if (helper_wifi::wifiIsAP(cur_mode) && !new_mode_AP_enabled) {
-    TLOGDEBUGF_P(PSTR("%sAP mode Disabled.\n"), WIFI_STR);    
+    TLOGDEBUGF_P(PSTR("%sAP mode Disabled.\n"), WIFI_STR);
   }
 
   if (helper_wifi::wifiIsAP(cur_mode) != new_mode_AP_enabled) {
@@ -315,9 +325,9 @@ void onWiFiStatusChange(TWiFiStatusCallbackF fn) {
 }
 
 /*
- * Execute the callback functions on the list 
- * @param  {conn2_wifi_status_t} status : 
- * @param  {char*} parameter            : 
+ * Execute the callback functions on the list
+ * @param  {conn2_wifi_status_t} status :
+ * @param  {char*} parameter            :
  */
 void doStatusCallbacks(conn2_wifi_status_t status, char* parameter) {
   for (unsigned char i = 0; i < _wifi_status_callbacks.size(); i++) {
@@ -370,32 +380,23 @@ void doWiFiConnect() {
   }
 
   if (idx >= 0) {
-   
+
     conn2_network_t entry = _network_list[idx];
     setSTA(true);
 
     if (!entry.dhcp) {
       WiFi.config(entry.ip, entry.gw, entry.netmask, entry.dns);
+    } else {
+      // https://github.com/espressif/arduino-esp32/issues/2537#issuecomment-508558849
+       WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
     }
 
-    // set hostname. Must be just before WiFi.begin()
-#ifdef ESP8266        
-    bool ret = WiFi.hostname(WiFiGetHostname().c_str());
-#else
-    // https://github.com/espressif/arduino-esp32/issues/2537#issuecomment-508558849
-    if (entry.dhcp) {
-      WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE);
-    }
-    bool ret = WiFi.setHostname(WiFiGetHostname().c_str());
-#endif    
-    TLOGDEBUGF_P(PSTR("%sSetting hostname: %s %s\n"),
-          WIFI_STR, WiFiGetHostname().c_str(), helper_general::boolSuccess(ret).c_str());
-          
+
     TLOGDEBUGF_P(PSTR("%sTrying wifi connection #%d (%d) to \"%s\"\n"),
         WIFI_STR, _idToConnect, idx, entry.ssid);
-    
+
     String pass = (entry.pass) ? String(entry.pass) : ""; // needed for printf in case entry.pass is null
-    
+
     char buffer[128];
     snprintf_P(
         buffer, sizeof(buffer),
@@ -405,7 +406,7 @@ void doWiFiConnect() {
         entry.bssid[1], entry.bssid[2], entry.bssid[3], entry.bssid[4],
         entry.bssid[5], entry.channel, entry.rssi,
         helper_wifi::getEncryptionTypeStr(entry.security).c_str(), entry.ssid, pass.c_str());
-    
+
     doStatusCallbacks(STATUS_CONNECTING, buffer);
 #ifdef CONN2_WIFI_ENABLE_ENTERPRISE
     /*
@@ -460,7 +461,7 @@ void doWiFiConnect() {
     } else
 #endif
 
-    if (entry.channel == 0) {      
+    if (entry.channel == 0) {
       WiFi.begin(entry.ssid, entry.pass);
     } else {
       WiFi.begin(entry.ssid, entry.pass, entry.channel, entry.bssid);
@@ -471,13 +472,13 @@ void doWiFiConnect() {
     char buffer[80];
     snprintf_P(buffer, sizeof(buffer), PSTR("%sNo network to connect. (%d)\n"),
                WIFI_STR, _idToConnect);
-    
+
     doStatusCallbacks(STATUS_NO_KNOWN_NETWORKS, buffer);
   }
 }
 
 /*
- * When WiFi scan is completed call this function to 
+ * When WiFi scan is completed call this function to
  * process found networks.
  */
 void processWiFiScan() {
@@ -528,7 +529,7 @@ void processWiFiScan() {
     char buffer[128];
     snprintf_P(buffer, sizeof(buffer),
                PSTR("%s[%s] Ch: %02d RSSI: %3d Sec: %15s %s SSID: %s"),
-               WIFI_STR, WiFi.BSSIDstr(ix[i]).c_str(), 
+               WIFI_STR, WiFi.BSSIDstr(ix[i]).c_str(),
                WiFi.channel(ix[i]), WiFi.RSSI(ix[i]),
                helper_wifi::getEncryptionTypeStr( WiFi.encryptionType(ix[i]) ).c_str(),
 #ifdef ESP8266
@@ -537,7 +538,7 @@ void processWiFiScan() {
                String().c_str(),  // ESP32 does not have isHidden property
 #endif
                WiFi.SSID(ix[i]).c_str() );
-    LOGINFOLN(buffer);   // do not print time with message           
+    LOGINFOLN(buffer);   // do not print time with message
     doStatusCallbacks(STATUS_FOUND_NETWORK, buffer);
 
     // scan the saved networks for valid to connect
@@ -571,7 +572,7 @@ void processWiFiScan() {
           _priority++;
         }
       }
-    }    
+    }
     //doStatusCallbacks(STATUS_FOUND_NETWORK, (char*)"\n");
   }
   _wifisJson += "]";
@@ -586,7 +587,7 @@ void processWiFiScan() {
       _wifiRetryConnectionCount++;
       _idToConnect = 1;
       // add connect function to tasks queue
-      addToTaskQueue(doWiFiConnect);      
+      addToTaskQueue(doWiFiConnect);
     }
   } else {
     char buffer[80];
@@ -611,7 +612,7 @@ void onWiFiScanComplete() {
              _scanNetworksFound);
 
   _status = STATUS_SCAN_COMPLETE;
-  doStatusCallbacks(STATUS_SCAN_COMPLETE, buffer);  
+  doStatusCallbacks(STATUS_SCAN_COMPLETE, buffer);
   processWiFiScan();
 }
 
@@ -650,7 +651,7 @@ void onWiFiDisconnect() {
   snprintf_P(buffer, sizeof(buffer), PSTR("%sWiFi Disconnected. Reason: %s\n"),
              WIFI_STR, CSTR(getLastDisconnectReason(_lastDisconnectReason)));
   doStatusCallbacks(STATUS_DISCONNECTED, buffer);
-  
+
   // if last status was connected, set _retryConnectionCount = 0 and start
   // connecting from the first network.
   // fail only if are continuous disconnects.
@@ -658,16 +659,16 @@ void onWiFiDisconnect() {
     _wifiRetryConnectionCount = 1;
     _idToConnect = 1;
     addToTaskQueue(doWiFiConnect);
-    
+
   } else if (_wifiRetryConnectionCount <= wifiConnectionRetries) {
     if (_idToConnect < _validNetworks) {
       ++_idToConnect;
-      addToTaskQueue(doWiFiConnect);      
+      addToTaskQueue(doWiFiConnect);
     } else {
       if (_wifiRetryConnectionCount < wifiConnectionRetries) {
         resetSavedNetworks(); // reset saved networks. Rescan is needed.
-        
-        addToTaskQueue(wifiConnect);        
+
+        addToTaskQueue(wifiConnect);
       } else {
         // no more networks to connect.
         // Exit to captive portal
@@ -706,14 +707,14 @@ void onWiFiScanCompleteEventESP8266(int networksFound) {
   onWiFiScanCompleteEvent(networksFound);
 }
 
-void onWiFiConnectEventESP8266(const WiFiEventStationModeConnected& event) { 
+void onWiFiConnectEventESP8266(const WiFiEventStationModeConnected& event) {
   wifiConnecting = String(event.ssid);
-  TLOGDEBUGF_P(PSTR("%sESP8266 Connected.\n"), WIFI_STR);    
+  TLOGDEBUGF_P(PSTR("%sESP8266 Connected.\n"), WIFI_STR);
   onWiFiConnectEvent();
 }
 
 void onWiFiGotIPEventESP8266(const WiFiEventStationModeGotIP& event) {
-  TLOGDEBUGF_P(PSTR("%sESP8266 Got IP.\n"), WIFI_STR);    
+  TLOGDEBUGF_P(PSTR("%sESP8266 Got IP.\n"), WIFI_STR);
   onWiFiGotIPEvent();
 }
 
@@ -746,19 +747,19 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
       if (_doWiFiConnectCalled) {
         _doWiFiConnectCalled = false;
         _lastDisconnectReason =
-          static_cast<WiFiDisconnectReason>(info.disconnected.reason);
-        onWiFiDisconnectEvent();    
-      }  
+          static_cast<WiFiDisconnectReason>(info.wifi_sta_disconnected.reason);
+        onWiFiDisconnectEvent();
+      }
       break;
     }
-    
+
     case SYSTEM_EVENT_STA_LOST_IP:
     break;
     case SYSTEM_EVENT_STA_GOT_IP: {
       onWiFiGotIPEvent();
     } break;
 
-    case SYSTEM_EVENT_AP_STACONNECTED:      
+    case SYSTEM_EVENT_AP_STACONNECTED:
       break;
     case SYSTEM_EVENT_AP_STADISCONNECTED:
       break;
@@ -775,30 +776,37 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 
 void wifiSetup() {
-  WiFi.persistent(false);
-  WiFi.setAutoReconnect(false);
+
+  WiFi.persistent(false);   // Solve possible wifi init errors (re-add at 6.2.1.16 #4044, #4083)
+  WiFi.disconnect(true);    // Delete SDK wifi config
+  delay(200);
+  setWiFiMode(WIFI_STA);
+
+
+  if (!WiFi.getAutoConnect()) { WiFi.setAutoConnect(true); }
+
   // The WiFi.disconnect() ensures that the WiFi is working correctly. If this is not done before receiving WiFi connections,
   // those WiFi connections will take a long time to make or sometimes will not work at all.
-  WiFi.disconnect();
-  setWiFiMode(WIFI_OFF);  
+//  WiFi.disconnect();
+//  setWiFiMode(WIFI_OFF);
 
-  TLOGDEBUGF_P(PSTR("%sSetup WiFi events.\n"), WIFI_STR);  
+  TLOGDEBUGF_P(PSTR("%sSetup WiFi events.\n"), WIFI_STR);
 
 #if defined(ESP32)
   WiFi.onEvent(onWiFiEvent);
 #else
   // WiFi event handlers
-  onStationModeConnectedHandler = 
+  onStationModeConnectedHandler =
       WiFi.onStationModeConnected(onWiFiConnectEventESP8266);
-	onStationModeDisconnectedHandler = 
+	onStationModeDisconnectedHandler =
       WiFi.onStationModeDisconnected(onWiFiDisconnectEventESP8266);
-	onStationModeGotIPHandler = 
+	onStationModeGotIPHandler =
       WiFi.onStationModeGotIP(onWiFiGotIPEventESP8266);
-  //stationModeDHCPTimeoutHandler    = 
+  //stationModeDHCPTimeoutHandler    =
   //WiFi.onStationModeDHCPTimeout(onWiFiDHCPTimeoutEventESP8266);
-  //APModeStationConnectedHandler    = 
+  //APModeStationConnectedHandler    =
   //WiFi.onSoftAPModeStationConnected(onConnectedAPmodeEventESP8266);
-  //APModeStationDisconnectedHandler = 
+  //APModeStationDisconnectedHandler =
   //WiFi.onSoftAPModeStationDisconnected(onDisconnectedAPmodeEventESP8266);
 #endif
 }
@@ -808,7 +816,7 @@ void wifiSetup() {
 // =========================================================
 
 /*
- * Add WiFi ssid to connection list. 
+ * Add WiFi ssid to connection list.
  */
 bool addWiFi(const char* ssid, const char* pass,
                                  const char* ip, const char* netmask,
@@ -864,7 +872,7 @@ bool addWiFi(const char* ssid, const char* pass,
   // Defaults
   new_network.rssi     = 0;
   new_network.security = 0;
-  new_network.channel  = 0;  
+  new_network.channel  = 0;
   new_network.priority = 0;
 
   _network_list.push_back(new_network);
@@ -872,7 +880,7 @@ bool addWiFi(const char* ssid, const char* pass,
 }
 
 /*
- * Scan for WiFi networks asynchronously 
+ * Scan for WiFi networks asynchronously
  * @return {bool}  : true if success, false if scan is already in process.
  */
 bool scanNetworks() {
@@ -881,17 +889,17 @@ bool scanNetworks() {
 
 #ifdef ESP32
   WiFi.scanNetworks(true, show_hidden);
-#else 
+#else
   WiFi.scanNetworksAsync(onWiFiScanCompleteEventESP8266, show_hidden);
 #endif
- 
+
   _status   = STATUS_SCANNING;
-  
+
   char buffer[120];
   snprintf_P(buffer, sizeof(buffer), PSTR("%sStart networks scanning.\n"),
              WIFI_STR);
   doStatusCallbacks(STATUS_SCANNING, buffer);
-  
+
   return true;
 }
 

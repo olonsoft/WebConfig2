@@ -9,10 +9,9 @@
 
 #include <time.h>           // time() ctime()
 #ifdef ESP8266
-#include <coredecls.h>      // settimeofday_cb()
+  #include <coredecls.h>      // settimeofday_cb()
 #else
-//#include <lwip/apps/sntp.h>
-//extern "C" sntp_set_time_sync_notification_cb();
+  #include "esp_sntp.h"
 #endif
 //#include <TZ.h>
 #include <TaskQueue.h>
@@ -34,11 +33,11 @@ void startWeb(){
     Serial.println("SetAP.");
     setAP(true);
   }
-   Web2.begin();  
+   Web2.begin();
 }
 
-// 
-// MQTT Status 
+//
+// MQTT Status
 //
 bool MQTTConnected = false;
 
@@ -55,7 +54,7 @@ void sendMQTTData(){
   MQTTSendData("test data");
 }
 
-Task tMqttSendStatusInfo(current_settings.statusUpdateInterval * TASK_MINUTE, 
+Task tMqttSendStatusInfo(current_settings.statusUpdateInterval * TASK_MINUTE,
                         TASK_FOREVER, &sendMQTTStatusInfo, &ts, false);
 
 
@@ -67,29 +66,34 @@ void NTPTrySync();        // forward declaration
 
 #ifdef ESP32
 void NTPSynced_cb(struct timeval *tv) {
-#else   
-void NTPSynced_cb() {  
-#endif  
+#else
+void NTPSynced_cb() {
+#endif
   NTPSynced = true;
   Serial.println("Time is SET.");
+  #ifdef ESP32
+    Serial.println(tv->tv_sec);
+    Serial.println(ctime(&tv->tv_sec));
+  #endif
 }
 
 // sync with ntp server might take more than 30seconds to complete.
 // check every 500ms if synced
-Task tNTPSync(500 * TASK_MILLISECOND, TASK_FOREVER, &NTPTrySync, &ts, false);
+//Task tNTPSync(500 * TASK_MILLISECOND, TASK_FOREVER, &NTPTrySync, &ts, false);
 
 bool NTPSet() {
   Serial.println("Set Time.");
-  
-#ifdef ESP8266  
+
+#ifdef ESP8266
   settimeofday_cb(NTPSynced_cb);
   configTime( current_settings.timeZone, current_settings.ntpServer);
 #else
-  // * ESP32 Arduino does not have callback (yet) when time is set
-  // sntp_set_time_sync_notification_cb(NTPSynced_cb);
+  // * ESP32 Arduino does not have callback (yet) when time is set. UPDATE use the following:
+  // https://techtutorialsx.com/2021/09/03/esp32-sntp-additional-features/
+  sntp_set_time_sync_notification_cb(NTPSynced_cb);
   configTzTime( current_settings.timeZone, current_settings.ntpServer);
-  tNTPSync.enable();
-#endif     
+  //tNTPSync.enable();
+#endif
 //  configTime( 0, 0, current_settings.ntpServer); //sets TZ and starts NTP sync
 //  https://github.com/esp8266/Arduino/pull/7144#issue-385658333
 //  environment variable TZ may not be set up after configTime().
@@ -98,19 +102,19 @@ bool NTPSet() {
   return true;
 }
 
-void NTPTrySync() {
-  NTPSynced = false;
-  time_t now;
-  tm info;
-  time(&now);
-  localtime_r(&now, &info);
-  if (info.tm_year > (2016 - 1900)) {
-    NTPSynced = true;
-    tNTPSync.disable();
-  }
-  Serial.print("Sync Time: ");  
-  Serial.println(NTPSynced);
-}
+// void NTPTrySync() {
+//   NTPSynced = false;
+//   time_t now;
+//   tm info;
+//   time(&now);
+//   localtime_r(&now, &info);
+//   if (info.tm_year > (2016 - 1900)) {
+//     NTPSynced = true;
+//     tNTPSync.disable();
+//   }
+//   Serial.print("Sync Time: ");
+//   Serial.println(NTPSynced);
+// }
 
 // ============================================================================
 // FOTA Firmware over the air
@@ -126,23 +130,23 @@ void FOTACheck() {
 Task tFOTACheck(current_settings.firmwareUpdateCheckInterval * TASK_MINUTE, TASK_FOREVER, &FOTACheck, &ts, false);
 
 // ============================================================================
-//      WiFi 
+//      WiFi
 // ============================================================================
 // @ callback. Do not call functions directly.
 void wifiStatusChange(conn2_wifi_status_t status, char *message) {
   // todo process all statuses
   switch (status) {
-    
+
     case STATUS_FOUND_NETWORK:
-      
+
       break;
-    
+
     case STATUS_DISCONNECTED:  // do not do any processing here.
       wifiDisconnections++;
       TLOGINFO(message);
-      
+
       break;
-    
+
     case STATUS_FORCED_DISCONNECTION:
       break;
 
@@ -166,7 +170,7 @@ void wifiStatusChange(conn2_wifi_status_t status, char *message) {
       TLOGINFO(message);
       // run captive portal
       // start the webconfig in AP mode
-      addToTaskQueue(startWeb);      
+      addToTaskQueue(startWeb);
       break;
 
     default:
@@ -290,12 +294,12 @@ void commandReboot() {
   wifiDisconnect();
   delay(4000);
   ESP.restart();
-  delay(1000);     
+  delay(1000);
 }
 
 /*
  * Message from mqtt broker has been received.
- ! add commands to execution queue. Do not call call directly 
+ ! add commands to execution queue. Do not call call directly
  ! within this callback.
  */
 void mqttMessage(char *topic, char *message, uint8_t qos, bool dup, bool retain,
@@ -305,7 +309,7 @@ void mqttMessage(char *topic, char *message, uint8_t qos, bool dup, bool retain,
                   topic, qos, retain, dup, (unsigned long)len, message);
 
   mqtt_command_t cmd;
-  
+
   cmd = decodeCommand(message, new_settings);
   TLOGDEBUGLN(cmd);
   switch (cmd) {
@@ -315,7 +319,7 @@ void mqttMessage(char *topic, char *message, uint8_t qos, bool dup, bool retain,
       break;
 
     case system_info:
-      addToTaskQueue(commandGetSystemInfo);      
+      addToTaskQueue(commandGetSystemInfo);
       break;
 
     case settings_cur:
@@ -368,7 +372,7 @@ void mqttMessage(char *topic, char *message, uint8_t qos, bool dup, bool retain,
 
     case scan_wifi:
       break;
-    
+
     case add_wifi:
       break;
 
@@ -394,8 +398,8 @@ void addNetworksCallback(const char *ssid, const char *password, bool dhcp,
                          const char *ip, const char *netmask,
                          const char *gateway, const char *dns) {
   TLOGDEBUGF_P(PSTR("[Add WiFi] ssid: %s, pass: %s, dhcp: %d, ip: %s, netmask: %s, gateway: %s, dns: %s\n"),
-      ssid, password, dhcp, ip, netmask, gateway, dns);                           
-  if (dhcp) {   
+      ssid, password, dhcp, ip, netmask, gateway, dns);
+  if (dhcp) {
     addWiFi(ssid, password);
   } else {
     addWiFi(ssid, password, ip, netmask, gateway, dns);
@@ -408,9 +412,9 @@ void webConfigStatusChange(webconfig_status_t wcStatus, char *message) {
     case WEB_CONFIG_TIMEOUT:
       if (!helper_wifi::wifiConnected()) {
         // clear all (marked to connect) networks and force rescan on next connect
-        resetSavedNetworks();        
+        resetSavedNetworks();
         addToTaskQueue(wifiConnect); // reconnect wifi
-      }  
+      }
       // ESP.restart();
       /* code */
       break;
@@ -426,15 +430,15 @@ void initialize() {
   // load current_settings from fs
   loadSettings(current_settings);
   TLOGINFOF_P(PSTR("Current Settings: %s\n\n"), settings2Json(current_settings).c_str());
-  
+
   // make a copy of current_settings to new_settings.
   copySettings(current_settings, new_settings);
   TLOGINFOF_P(PSTR("New Settings: %s\n\n"), settings2Json(new_settings).c_str());
 
-  // load networks config file. 
+  // load networks config file.
   // Holds all wifi networks that this system can connect.
   loadNetworks(addNetworksCallback);
-  
+
   // setup Firmware Over the Air
   FOTAClient.setFOTAParameters(helper_general::addTrailingSlash(String(current_settings.firmwareConfURL)), helper_general::addMacAddress(String(current_settings.deviceName)), APP_VERSION, FS_VERSION); // todo: add defined
   FOTAClient.onMessage(onFOTAMessage);
@@ -458,7 +462,7 @@ void initialize() {
   Web2.setTimeout(60);
   // setup callback to changes of webconfig
   Web2.onStatusChange(webConfigStatusChange);
-  
+
   // wifi connection setup
   TLOGINFOLN("Setup WiFi");
   onWiFiStatusChange(wifiStatusChange);
@@ -493,6 +497,6 @@ void wrapperLoop() {
   if (NTPSynced && MQTTConnected && !tMqttSendStatusInfo.isEnabled()) tMqttSendStatusInfo.enable();
   tasksExecute();
   wifiLoop();
-  
+
   Web2.loop();
 }
