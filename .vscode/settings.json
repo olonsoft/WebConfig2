@@ -41,5 +41,6 @@
     "type_traits": "cpp",
     "utility": "cpp",
     "typeinfo": "cpp"
-  }
+  },
+  "liveServer.settings.port": 5501
 }

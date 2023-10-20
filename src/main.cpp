@@ -12,7 +12,7 @@ Task tWrapper(100 * TASK_MILLISECOND, TASK_FOREVER, &wrapperLoop, &ts, true);
 void setup() {
   Serial.begin(115200);
   delay(500);
-  LOGLN; 
+  LOGLN;
   LOGLN;
   TLOGINFO("\e[5;44mDemo project.\e[m\n");
   Serial.setDebugOutput(true);

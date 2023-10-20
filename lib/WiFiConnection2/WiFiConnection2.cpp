@@ -233,7 +233,7 @@ void setWiFiMode(WiFiMode_t wifimode) {
     #endif // ifdef ESP8266
   } else {
     #ifdef ESP8266 // In ESP8266 setHostName must be just after WiFi.mode()
-      bool ret = WiFi.setHostname(WiFiGetHostname().c_str());
+      bool ret = WiFi.hostname(WiFiGetHostname().c_str());
       TLOGDEBUGF_P(PSTR("%sSetting hostname: %s %s\n"),
             WIFI_STR, WiFiGetHostname().c_str(), helper_general::boolSuccess(ret).c_str());
     #endif
@@ -776,7 +776,7 @@ void onWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
 
 
 void wifiSetup() {
-
+  Serial.println(__FUNCTION__);
   WiFi.persistent(false);   // Solve possible wifi init errors (re-add at 6.2.1.16 #4044, #4083)
   WiFi.disconnect(true);    // Delete SDK wifi config
   delay(200);
